@@ -1,16 +1,19 @@
 (function($) {
+  //Add 'patch' for updating specified attributes.
+  //But as Rails 3.2 doesn't support PATCH, use PUT instread of it.
   var methodMap = {
     'create': 'POST',
     'update': 'PUT',
+    'patch':  'PUT',
     'delete': 'DELETE',
     'read'  : 'GET'
   };
-  
+
   var getUrl = function(object) {
     if (!(object && object.url)) return null;
     return _.isFunction(object.url) ? object.url() : object.url;
   };
-  
+
   var urlError = function() {
     throw new Error("A 'url' property or function must be specified");
   };
@@ -25,7 +28,7 @@
       beforeSend: function( xhr ) {
         if (!options.noCSRF) {
           var token = $('meta[name="csrf-token"]').attr('content');
-          if (token) xhr.setRequestHeader('X-CSRF-Token', token);  
+          if (token) xhr.setRequestHeader('X-CSRF-Token', token);
         }
         model.trigger('sync:start');
       }
@@ -36,15 +39,15 @@
     }
 
     // Ensure that we have the appropriate request data.
-    if (!params.data && model && (method == 'create' || method == 'update')) {
+    if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
       params.contentType = 'application/json';
 
       var data = {}
 
       if(model.paramRoot) {
-        data[model.paramRoot] = model.toJSON();
+        data[model.paramRoot] = options.attrs || model.toJSON();
       } else {
-        data = model.toJSON();
+        data = options.attrs || model.toJSON();
       }
 
       params.data = JSON.stringify(data)
@@ -61,7 +64,7 @@
       model.trigger('sync:end');
       if (complete) complete(jqXHR, textStatus);
     };
-    
+
     var success = options.success;
     params.success = function(resp) {
       if (success) success(model, resp, options);
@@ -73,9 +76,9 @@
       if (error) error(model, xhr, options);
       model.trigger('error', model, xhr, options);
     };
-    
+
     // Make the request.
     return $.ajax(params);
   }
-  
+
 })(jQuery);
