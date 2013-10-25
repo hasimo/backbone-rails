@@ -49,8 +49,19 @@
       } else {
         data = options.attrs || model.toJSON();
       }
+      //method hack
+      if ( type === 'PUT' ){ data['_method'] = 'PUT'; }
 
       params.data = JSON.stringify(data)
+    }
+
+    if ( type === 'PUT' ){
+      params.type = 'POST';
+      var beforeSend = options.beforeSend;
+      params.beforeSend = function(xhr) {
+        xhr.setRequestHeader('X-HTTP-Method-Override', type);
+        if (beforeSend) return beforeSend.apply(this, arguments);
+      };
     }
 
     // Don't process data on a non-GET request.
